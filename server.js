@@ -1,4 +1,3 @@
-let http = require("http");
 const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
@@ -18,11 +17,11 @@ app.post("/todo/add", (req, res) => {
     const todo = req.body.todo;
     todo.id = Date.now().toString();
     todos.push(todo);
-    res.json({ result: "Ok" });
+    res.json({result: "Ok"});
 });
 
 app.get("/todo", (req, res) => {
-    res.json({ todos: todos });
+    res.json({todos: todos});
 });
 
 app.put("/todo/complete", (req, res) => {
@@ -41,8 +40,6 @@ app.delete("/todo/:id", (req, res) => {
     res.json({ result: "Ok" });
 });
 
-const server = http.createServer(app);
-
-server.listen(100, () => {
+app.listen(80, () => {
     console.log(`- server running`);
 });
