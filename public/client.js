@@ -1,30 +1,38 @@
 let todos = [];
 
 const render = () => {
-   const todoList = document.getElementById("todoList");
-   todoList.innerHTML = "";
-   todos.forEach(todo => {
-    let todoClass = '';
-    if (todo.completed) {
-        todoClass = 'completed';
-    }
+    const todoList = document.getElementById("todoList");
+    todoList.innerHTML = "";
     
-    const li = `
+    todos.forEach(todo => {
+        let todoClass = '';
+        if (todo.completed) {
+            todoClass = 'completed';
+        }
+        
+        let buttonText = "Completa";
+        if (todo.completed) {
+            buttonText = "Completato";
+        }
+        
+        const li = `
         <li class="${todoClass}">
             <span>${todo.name}</span>
             <div>
-                <button class="complete-button green" id="${todo.id}">Completa</button>
+                <button class="complete-button green" id="${todo.id}">${buttonText}</button>
                 <button class="delete-button red" id="${todo.id}">Elimina</button>
             </div>
         </li>
     `;
-       todoList.innerHTML += li;
-   });
-   const completeButtons = document.querySelectorAll('.complete-button');
+    
+    todoList.innerHTML += li;
+    });
+
+    const completeButtons = document.querySelectorAll('.complete-button');
     completeButtons.forEach(button => {
         button.onclick = () => {
             const id = button.getAttribute('id');
-            completeTodo(id);
+            completeTodo(id, button);  // Passiamo il bottone per aggiornare il testo
         };
     });
 
@@ -56,7 +64,7 @@ const load = () => {
         });
 };
 
-const completeTodo = (id) => {
+const completeTodo = (id, button) => {
     const todo = { id };
     return fetch("/todo/complete", {
         method: 'PUT',
@@ -64,7 +72,11 @@ const completeTodo = (id) => {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(todo)
-    }).then(() => load());
+    }).then(() => {
+        // Cambia il testo del bottone direttamente nel DOM
+        button.textContent = "Completato";
+        load(); // Ricarica la lista
+    });
 };
 
 const deleteTodo = (id) => {
