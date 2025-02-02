@@ -4,15 +4,20 @@ const render = () => {
    const todoList = document.getElementById("todoList");
    todoList.innerHTML = "";
    todos.forEach(todo => {
-       const li = `
-           <li class="${todo.completed ? 'completed' : ''}">
-               <span>${todo.name}</span>
-               <div>
-                   <button class="complete-button" id="${todo.id}">Completa</button>
-                   <button class="delete-button" id="${todo.id}">Elimina</button>
-               </div>
-           </li>
-       `;
+    let todoClass = '';
+    if (todo.completed) {
+        todoClass = 'completed';
+    }
+    
+    const li = `
+        <li class="${todoClass}">
+            <span>${todo.name}</span>
+            <div>
+                <button class="complete-button green" id="${todo.id}">Completa</button>
+                <button class="delete-button red" id="${todo.id}">Elimina</button>
+            </div>
+        </li>
+    `;
        todoList.innerHTML += li;
    });
    const completeButtons = document.querySelectorAll('.complete-button');
