@@ -8,7 +8,7 @@ const render = () => {
            <li class="${todo.completed ? 'completed' : ''}">
                <span>${todo.name}</span>
                <div>
-                   <button class="complete-button" id="${todo.id}" style=”background-color:green>Completa</button>
+                   <button class="complete-button" id="${todo.id}">Completa</button>
                    <button class="delete-button" id="${todo.id}">Elimina</button>
                </div>
            </li>
