@@ -1,104 +1,129 @@
-let todos = [];
+const createMiddleware = () => {
+    return {
+        send: (todo) => {
+            return new Promise((resolve, reject) => {
+                fetch("/todo/add", {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(todo)
+                })
+                    .then((response) => response.json())
+                    .then((json) => {
+                        resolve(json); // risposta del server all'aggiunta
+                    })
+            })
+        },
+        load: () => {
+            return new Promise((resolve, reject) => {
+                fetch("/todo")
+                    .then((response) => response.json())
+                    .then((json) => {
+                        resolve(json); // risposta del server con la lista         
+                    })
+            })
+        },
+        put: (todo) => {
+            return new Promise((resolve, reject) => {
+                fetch("/todo/complete", {
+                    method: 'PUT',
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(todo)
+                })
+                    .then((response) => response.json())
+                    .then((json) => {
+                        resolve(json);
+                    })
+            })
+        },
+        delete: (id) => {
+            return new Promise((resolve, reject) => {
+                fetch("/todo/" + id, {
+                    method: 'DELETE'                
+                })
+                    .then((response) => response.json())
+                    .then((json) => {
+                        resolve(json);
+                    })
+            })
+        }
+    }
+}
 
-const render = () => {
-    const todoList = document.getElementById("todoList");
-    todoList.innerHTML = "";
-    
-    todos.forEach(todo => {
-        let todoClass = '';
-        if (todo.completed) {
-            todoClass = 'completed';
-        }
-        
-        let buttonText = "Completa";
-        if (todo.completed) {
-            buttonText = "Completato";
-        }
-        
-        const li = `
-        <li class="${todoClass}">
-            <span>${todo.name}</span>
-            <div>
-                <button class="complete-button green" id="${todo.id}">${buttonText}</button>
-                <button class="delete-button red" id="${todo.id}">Elimina</button>
-            </div>
-        </li>
+const createForm = (add) => {
+    const inputInsert = document.querySelector("#inputInsert");
+    const buttonInsert = document.querySelector("#buttonInsert");
+    buttonInsert.onclick = () => {
+        add(inputInsert.value);
+        inputInsert.value = "";
+    }
+}
+
+const createList = () => {
+    const listTable = document.querySelector("#listTable");
+    const template = `
+                    <tr>                            
+                        <td class="%COLOR">%TASK</td>
+                        <td><button class="btn btn-success" id="COMPLETE_%ID" type="button">COMPLETA</button></td>                            
+                        <td><button class="btn btn-danger" id="DELETE_%ID" type="button">ELIMINA</button></td>                                                    
+                    </tr>
     `;
-    
-    todoList.innerHTML += li;
-    });
+    return {
+        render: (todos, completeTodo, deleteTodo) => {
+            let html = "";
+            todos.forEach((todo) => {
+                let row = template.replace("COMPLETE_%ID", "COMPLETE_" + todo.id);
+                row = row.replace("DELETE_%ID", "DELETE_" + todo.id);
+                row = row.replace("%TASK", todo.name);
+                row = row.replace("%COLOR", todo.completed ? "text-success" : "text-primary");
+                html += row;
+            });
+            listTable.innerHTML = html;
+            todos.forEach((todo) => {
+                document.querySelector("#COMPLETE_" + todo.id).onclick = () => completeTodo(todo.id);
+                document.querySelector("#DELETE_" + todo.id).onclick = () => deleteTodo(todo.id);
+            })
+        }
+    }
+}
 
-    const completeButtons = document.querySelectorAll('.complete-button');
-    completeButtons.forEach(button => {
-        button.onclick = () => {
-            const id = button.getAttribute('id');
-            completeTodo(id, button);  // Passiamo il bottone per aggiornare il testo
-        };
-    });
-
-    const deleteButtons = document.querySelectorAll('.delete-button');
-    deleteButtons.forEach(button => {
-        button.onclick = () => {
-            const id = button.getAttribute('id');
-            deleteTodo(id);
-        };
-    });
-};
-
-const send = (todo) => {
-    return fetch("/todo/add", {
-        method: 'POST',
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ todo })
-    }).then(response => response.json());
-};
-
-const load = () => {
-    return fetch("/todo")
-        .then(response => response.json())
-        .then(json => {
+const createBusinessLogic = (middleware, list) => {
+    let todos = [];
+    const reload = () => {
+        middleware.load()
+        .then((json) => {
             todos = json.todos;
-            render();
-        });
-};
-
-const completeTodo = (id, button) => {
-    const todo = { id };
-    return fetch("/todo/complete", {
-        method: 'PUT',
-        headers: {
-            "Content-Type": "application/json"
+            list.render(todos, completeTodo, deleteTodo);
+        })
+    }
+    const completeTodo = (id) => {
+        const todo = todos.filter((todo) => todo.id === id)[0];
+        middleware.put(todo)
+            .then(() => reload());
+    }
+    const deleteTodo =  (id) => {
+        console.log("delete " + id);
+        middleware.delete(id)
+        .then(() => reload());
+    }
+    return {
+        add: (task) => {
+            const todo = {
+                name: task,
+                completed: false
+            }
+            middleware.send({ todo: todo })
+                .then(() => reload());
         },
-        body: JSON.stringify(todo)
-    }).then(() => {
-        // Cambia il testo del bottone direttamente nel DOM
-        button.textContent = "Completato";
-        load(); // Ricarica la lista
-    });
-};
+        reload: reload
+    }
+}
 
-const deleteTodo = (id) => {
-    return fetch("/todo/"+id, {
-        method: 'DELETE'
-    }).then(() => load());
-};
-
-document.getElementById("insertButton").onclick = () => {
-    const todoInput = document.getElementById("todoInput");
-    const todo = {
-        name: todoInput.value,
-        completed: false
-    };
-    send(todo).then(() => {
-        todoInput.value = "";
-        load();
-    });
-};
-
-load();
-
-setInterval(() => {
-   load();
-}, 30000);
+const middleware = createMiddleware();
+const list = createList();
+const businessLogic = createBusinessLogic(middleware, list);
+const form = createForm(businessLogic.add);
+businessLogic.reload();
